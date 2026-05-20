@@ -1,0 +1,40 @@
+name: Deploy to AwardSpace
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: Sync Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v3
+
+      - name: Sync files to Server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server:   ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /anik-sen.atwebpages.com/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github*
+            **/.github*/**
+            **/data/*.sqlite
+            **/data/**
+            **/.env*
+            **/.local/**
+            **/attached_assets/**
+            **/router.php
+            **/replit.nix
+            **/.replit
+            **/UPLOAD_TO_AWARDSPACE.txt
+          # Prevents "550 No such file" FTP errors caused by the action trying
+          # to delete files tracked in a stale server-side state file.
+          # Safe to keep on permanently — just upload/update, never delete.
+          danger-allow-clean: false

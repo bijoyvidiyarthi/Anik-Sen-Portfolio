@@ -1,0 +1,22 @@
+HTTP/1.1 302 Found
+Host: 127.0.0.1:5000
+Date: Mon, 31 Aug 2026 05:20:14 GMT
+Connection: close
+X-Powered-By: PHP/8.2.12
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Set-Cookie: ANIK_SID=0trc8o6do2gugmbmd8e0fjestu; expires=Mon, 31 Aug 2026 09:20:14 GMT; Max-Age=14400; path=/; HttpOnly; SameSite=Lax
+Location: /admin/
+Content-type: text/html; charset=UTF-8
+
+HTTP/1.1 200 OK
+Host: 127.0.0.1:5000
+Date: Mon, 31 Aug 2026 05:20:14 GMT
+Connection: close
+X-Powered-By: PHP/8.2.12
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Content-type: text/html; charset=UTF-8
+

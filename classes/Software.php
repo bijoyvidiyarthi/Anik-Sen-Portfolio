@@ -4,30 +4,31 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Catalog of creative software / tools used on projects.
+ * Catalog of developer tools / technologies used on projects.
  * Each entry: [label, letters, color (foreground), bg].
  * Stored on a project as comma-separated keys, rendered as chips.
  */
 class Software
 {
     private const CATALOG = [
-        "premiere"     => ["Premiere Pro",       "Pr", "#EA77FF", "#00005B"],
-        "aftereffects" => ["After Effects",      "Ae", "#D291FF", "#1A0033"],
-        "photoshop"    => ["Photoshop",          "Ps", "#31A8FF", "#001E36"],
-        "illustrator"  => ["Illustrator",        "Ai", "#FF9A00", "#330000"],
-        "lightroom"    => ["Lightroom",          "Lr", "#31A8FF", "#001E36"],
-        "audition"     => ["Audition",           "Au", "#00E1A0", "#00375B"],
-        "indesign"     => ["InDesign",           "Id", "#FF3366", "#49021F"],
-        "davinci"      => ["DaVinci Resolve",    "Dv", "#FF6B6B", "#1A1A1A"],
-        "finalcut"     => ["Final Cut Pro",      "Fc", "#000000", "#F5F5F5"],
-        "figma"        => ["Figma",              "Fg", "#A259FF", "#1E1E1E"],
-        "canva"        => ["Canva",              "Cv", "#00C4CC", "#003F4D"],
-        "blender"      => ["Blender",            "Bl", "#F5792A", "#1B1B1B"],
-        "capcut"       => ["CapCut",             "Cc", "#FFFFFF", "#000000"],
-        "gemini"       => ["Gemini AI",          "Ge", "#8E75B2", "#1A0F2C"],
-        "chatgpt"      => ["ChatGPT",            "GP", "#10A37F", "#0B2A21"],
-        "midjourney"   => ["Midjourney",         "Mj", "#FFFFFF", "#000000"],
-        "runway"       => ["Runway",             "Rw", "#00FF88", "#0F0F0F"],
+        "php"          => ["PHP",                 "Ph", "#8892BF", "#1D2033"],
+        "laravel"      => ["Laravel",             "Lv", "#FF2D20", "#2D0C09"],
+        "javascript"   => ["JavaScript",          "Js", "#F7DF1E", "#2B2600"],
+        "typescript"   => ["TypeScript",          "Ts", "#3178C6", "#0E1F34"],
+        "react"        => ["React",               "Re", "#61DAFB", "#10242D"],
+        "nextjs"       => ["Next.js",             "Nx", "#111111", "#F5F5F5"],
+        "node"         => ["Node.js",             "Nd", "#68A063", "#101C11"],
+        "mysql"        => ["MySQL",               "My", "#00758F", "#062C3C"],
+        "postgres"     => ["PostgreSQL",          "Pg", "#336791", "#0B1F2A"],
+        "mongodb"      => ["MongoDB",             "Mg", "#47A248", "#0F2A0F"],
+        "docker"       => ["Docker",              "Dr", "#2496ED", "#0D2A3D"],
+        "git"          => ["Git",                 "Gt", "#F05032", "#2F140D"],
+        "github"       => ["GitHub",              "Gh", "#181717", "#F4F4F4"],
+        "tailwind"     => ["Tailwind CSS",        "Tw", "#38BDF8", "#0C2033"],
+        "redis"        => ["Redis",               "Rd", "#DC382D", "#2A0E0A"],
+        "aws"          => ["AWS",                 "Aw", "#FF9900", "#2C1A00"],
+        "restapi"      => ["REST API",            "Api", "#8B5CF6", "#211331"],
+        "graphql"      => ["GraphQL",             "Gq", "#E10098", "#2F071F"],
     ];
 
     public static function catalog(): array

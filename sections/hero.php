@@ -11,13 +11,41 @@ $phrasesJson = htmlspecialchars(json_encode(array_values($hero["phrases_array"] 
 $badge      = $hero["badge_text"]   ?? "Available for freelance work";
 $name       = $hero["name"]         ?? "Anik Sen";
 $eyebrow    = $hero["eyebrow"]      ?? "Hi, I’m";
-$lede       = $hero["lede"]         ?? "";
-$ctaLabel   = $hero["cta_label"]    ?? "View Work";
+$lede       = $hero["lede"]         ?? "I build polished digital products, backend systems, and product experiences that solve real business problems.";
+$ctaLabel   = $hero["cta_label"]    ?? "View Projects";
 $ctaLink    = $hero["cta_link"]     ?? "#projects";
+$ctaVariant = in_array((string)($hero["cta_variant"] ?? ""), ["primary", "outline", "ghost"], true)
+    ? (string)$hero["cta_variant"]
+    : "primary";
 $cta2Label  = $hero["cta2_label"]   ?? "Download CV";
 $cta2Link   = $hero["cta2_link"]    ?? "/cv.php";
-$chipT      = $hero["chip_title"]   ?? "Graphic Designer";
-$chipS      = $hero["chip_sub"]     ?? "& Video Editor";
+$cta2Variant = in_array((string)($hero["cta2_variant"] ?? ""), ["primary", "outline", "ghost"], true)
+    ? (string)$hero["cta2_variant"]
+    : "outline";
+$cta2Type   = strtolower((string)($hero["cta2_type"] ?? ""));
+if ($cta2Type === "") {
+    $cta2Type = str_starts_with($cta2Link, "/cv.php") || stripos($cta2Link, "cv") !== false ? "download" : "link";
+}
+
+$ctaClass = match ($ctaVariant) {
+    "outline" => "btn btn-pill btn-outline",
+    "ghost" => "btn btn-pill btn-ghost",
+    default => "btn btn-pill btn-primary glow",
+};
+$cta2Class = match ($cta2Variant) {
+    "primary" => "btn btn-pill btn-primary",
+    "ghost" => "btn btn-pill btn-ghost",
+    default => "btn btn-pill btn-outline",
+};
+$cta2Attrs = "";
+if ($cta2Type === "download") {
+    $cta2Attrs .= ' download';
+}
+if ($cta2Type === "external") {
+    $cta2Attrs .= ' target="_blank" rel="noopener noreferrer"';
+}
+$chipT      = $hero["chip_title"]   ?? "Full-Stack Developer";
+$chipS      = $hero["chip_sub"]     ?? "PHP · JavaScript · APIs";
 
 // Toggles default to ON if the column is missing or NULL (legacy installs).
 $statsOn   = !isset($hero["stats_enabled"])      || (int)$hero["stats_enabled"]      === 1;
@@ -38,6 +66,7 @@ $splitLabel = static function (string $label): string {
         ? htmlspecialchars($parts[0]) . "<br>" . htmlspecialchars($parts[1])
         : htmlspecialchars($label);
 };
+
 ?>
 <section id="hero" class="section section-hero">
     <?php if ($orbsOn): ?>
@@ -82,14 +111,13 @@ $splitLabel = static function (string $label): string {
 
             <div class="hero-ctas">
                 <?php if ($ctaLabel !== ""): ?>
-                <a href="<?= htmlspecialchars($ctaLink) ?>" class="btn btn-pill btn-primary glow">
+                <a href="<?= htmlspecialchars($ctaLink) ?>" class="<?= htmlspecialchars($ctaClass, ENT_QUOTES) ?>">
                     <?= htmlspecialchars($ctaLabel) ?> <i class="fa-solid fa-arrow-right"></i>
                 </a>
                 <?php endif; ?>
                 <?php if ($cta2Label !== ""): ?>
-                <a href="<?= htmlspecialchars($cta2Link) ?>" class="btn btn-pill btn-outline"
-                   <?= str_starts_with($cta2Link, "/cv.php") ? "download" : "" ?>>
-                    <i class="fa-solid fa-arrow-down"></i> <?= htmlspecialchars($cta2Label) ?>
+                <a href="<?= htmlspecialchars($cta2Link) ?>" class="<?= htmlspecialchars($cta2Class, ENT_QUOTES) ?>"<?= $cta2Attrs ?>>
+                   <i class="fa-solid fa-arrow-down"></i> <?= htmlspecialchars($cta2Label) ?>
                 </a>
                 <?php endif; ?>
             </div>
@@ -107,17 +135,23 @@ $splitLabel = static function (string $label): string {
         </div>
 
         <div class="hero-visual fade-up" style="--fade-delay: .2s">
-            <!-- Soft slow-pulsing glow ring sits behind the frameless 3D avatar
-                 to give the transparent character extra depth on the dark background. -->
-            <div class="hero-glow" aria-hidden="true"></div>
-            <div class="hero-avatar-wrap">
+            <div class="hero-avatar-wrap image-hover-swap" data-direction="mouse" data-edge="on" data-mobile="tap">
                 <img
-                    class="hero-avatar-img floaty"
+                    class="hero-avatar-img floaty image-hover-base"
                     src="<?= $avatarSrc ?>"
                     alt="3D illustration of <?= htmlspecialchars($name) ?> at his designer workspace"
                     loading="eager"
                     width="1024"
                     height="1024">
+                <img
+                    class="hero-avatar-img image-hover-overlay"
+                    src="<?= $avatarSrc ?>"
+                    alt=""
+                    aria-hidden="true"
+                    loading="eager"
+                    width="1024"
+                    height="1024">
+                <span class="image-hover-edge"></span>
             </div>
 
             <?php if (trim($chipT) !== "" || trim($chipS) !== ""): ?>

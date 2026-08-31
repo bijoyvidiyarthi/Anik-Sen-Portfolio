@@ -35,7 +35,7 @@ $hasLocalFile     = !empty($editing["video_file"]);
             <label class="label">Title <span class="text-rose-400">*</span></label>
             <input class="input" name="title" required
                    value="<?= htmlspecialchars($editing["title"] ?? "") ?>"
-                   placeholder="Project name">
+                   placeholder="Project / product name">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -274,14 +274,14 @@ $hasLocalFile     = !empty($editing["video_file"]);
         <p class="form-section-label"><i class="fa-solid fa-layer-group"></i> Skills &amp; tools</p>
 
         <div>
-            <label class="label">Skills / Techniques used</label>
+            <label class="label">Core stack &amp; capabilities</label>
             <input class="input" name="skills_used"
                    value="<?= htmlspecialchars($editing["skills_used"] ?? "") ?>"
-                   placeholder="Color grading, motion tracking, sound design…">
+                   placeholder="REST APIs, analytics, system design, performance tuning…">
         </div>
 
         <div>
-            <label class="label">Software stack</label>
+            <label class="label">Technology stack</label>
             <div class="grid grid-cols-3 gap-1.5 max-h-44 overflow-y-auto p-2 rounded-xl bg-black/30 border border-white/8 sidebar-scroll">
                 <?php foreach ($catalog as $key => [$lab, $let, $col, $bg]):
                     $checked = in_array($key, $selectedSw, true);
@@ -308,14 +308,14 @@ $hasLocalFile     = !empty($editing["video_file"]);
         <div>
             <label class="label">Description</label>
             <textarea name="description" class="textarea" rows="4"
-                      placeholder="A short description of the project…"><?= htmlspecialchars($editing["description"] ?? "") ?></textarea>
+                      placeholder="What problem was solved, what shipped, and what the stack was…"><?= htmlspecialchars($editing["description"] ?? "") ?></textarea>
         </div>
 
         <div>
-            <label class="label">External link <span class="text-white/35 font-normal text-[10px]">optional</span></label>
+            <label class="label">Project link <span class="text-white/35 font-normal text-[10px]">optional</span></label>
             <input class="input" name="project_url"
                    value="<?= htmlspecialchars($editing["project_url"] ?? "") ?>"
-                   placeholder="https://...">
+                   placeholder="https://..."><!-- Product or demo URL -->
         </div>
     </div>
 

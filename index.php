@@ -12,6 +12,8 @@ use App\Hero;
 use App\About;
 use App\Project;
 use App\Skill;
+use App\Experience;
+use App\Certification;
 use App\Education;
 use App\Review;
 use App\Client;
@@ -24,13 +26,15 @@ Visitor::track($_SERVER["REQUEST_URI"] ?? "/");
 $settings  = Settings::all();
 $hero      = Hero::get();
 $about     = About::get();
-$expertise = About::expertise();
-$projects  = Project::all(true);
-$creative  = Skill::all("creative");
-$software  = Skill::all("software");
-$education = Education::all();
-$reviews   = Review::all();
-$clients   = Client::all(true);
+$expertise    = About::expertise();
+$projects     = Project::all(true);
+$creative     = Skill::all("creative");
+$software     = Skill::all("software");
+$experiences  = Experience::all();
+$certifications = Certification::all();
+$education    = Education::all();
+$reviews      = Review::all();
+$clients      = Client::all(true);
 
 $site = [
     "name"     => $settings["site_name"]     ?? "Anik Sen",
@@ -50,7 +54,7 @@ $site = [
 include __DIR__ . "/includes/header.php";
 
 // Section toggles — admin can hide any of these from /admin/sections.php.
-foreach (["hero", "about", "skills", "projects", "education", "reviews", "clients", "contact"] as $section) {
+foreach (["hero", "about", "skills", "experience", "certifications", "projects", "education", "reviews", "clients", "contact"] as $section) {
     if (SiteSection::isVisible($section)) {
         include __DIR__ . "/sections/{$section}.php";
     }

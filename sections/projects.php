@@ -104,21 +104,21 @@ $totalGraphic = count(array_filter($payload, fn($p) => $p["main"] === "graphic")
     <div class="container">
         <div class="projects-header reveal">
             <span class="section-eyebrow"><?= htmlspecialchars(\App\Settings::get("projects_eyebrow", "Portfolio")) ?></span>
-            <h2 class="section-title centered"><?= htmlspecialchars(\App\Settings::get("projects_title", "Selected Work")) ?></h2>
-            <p class="section-sub"><?= htmlspecialchars(\App\Settings::get("projects_subtitle", "Curated projects across motion and graphic design — tap any card to dive in.")) ?></p>
+            <h2 class="section-title centered"><?= htmlspecialchars(\App\Settings::get("projects_title", "Selected Projects")) ?></h2>
+            <p class="section-sub"><?= htmlspecialchars(\App\Settings::get("projects_subtitle", "Product builds, platform work, and developer tooling created to solve real problems.")) ?></p>
 
             <div class="filter-stack">
                 <div class="filter-bar main-filter" role="tablist" aria-label="Main category">
                     <button class="filter-btn active" data-main="all">
-                        <i class="fa-solid fa-grip"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_all", "All Work")) ?>
+                        <i class="fa-solid fa-grip"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_all", "All Projects")) ?>
                         <span class="sub-count"><?= $totalAll ?></span>
                     </button>
                     <button class="filter-btn" data-main="video">
-                        <i class="fa-solid fa-circle-play"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_video", "Video & Motion")) ?>
+                        <i class="fa-solid fa-circle-play"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_video", "Web Apps")) ?>
                         <?php if ($totalVideo): ?><span class="sub-count"><?= $totalVideo ?></span><?php endif; ?>
                     </button>
                     <button class="filter-btn" data-main="graphic">
-                        <i class="fa-solid fa-palette"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_graphic", "Graphic Design")) ?>
+                        <i class="fa-solid fa-code"></i> <?= htmlspecialchars(\App\Settings::get("projects_filter_graphic", "Platform Systems")) ?>
                         <?php if ($totalGraphic): ?><span class="sub-count"><?= $totalGraphic ?></span><?php endif; ?>
                     </button>
                 </div>
@@ -154,10 +154,15 @@ $totalGraphic = count(array_filter($payload, fn($p) => $p["main"] === "graphic")
                          data-sub="<?= htmlspecialchars($p["sub"]) ?>"
                          data-kind="<?= htmlspecialchars($p["kind"]) ?>"
                          data-id="<?= (int)$p["id"] ?>">
-                    <div class="pc-media">
-                        <img src="<?= htmlspecialchars($p["cover"]) ?>"
+                    <div class="pc-media image-hover-swap" data-direction="lr" data-edge="on" data-mobile="tap">
+                        <img class="image-hover-base" src="<?= htmlspecialchars($p["cover"]) ?>"
                              alt="<?= htmlspecialchars($p["title"]) ?>"
                              loading="lazy">
+                        <img class="image-hover-overlay" src="<?= htmlspecialchars($p["cover"]) ?>"
+                             alt=""
+                             aria-hidden="true"
+                             loading="lazy">
+                        <span class="image-hover-edge"></span>
                         <span class="pc-badge"><?= htmlspecialchars($p["sub"] ?: ($p["main"] === "video" ? "Video" : "Graphic")) ?></span>
                         <?php if ($p["kind"] === "video"): ?>
                             <span class="pc-play"><i class="fa-solid fa-play"></i></span>
@@ -180,6 +185,18 @@ $totalGraphic = count(array_filter($payload, fn($p) => $p["main"] === "graphic")
                                         <?= htmlspecialchars($s["letters"]) ?>
                                     </span>
                                 <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($p["extUrl"])): ?>
+                            <div class="pc-actions">
+                                <a href="<?= htmlspecialchars($p["extUrl"]) ?>"
+                                   class="pc-link"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   onclick="event.stopPropagation();">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    Visit project
+                                </a>
                             </div>
                         <?php endif; ?>
                     </div>

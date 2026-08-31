@@ -81,9 +81,8 @@ abstract class BaseRepository implements RepositoryInterface
         return (int) static::pdo()->lastInsertId();
     }
 
-    protected static function columnExists(string $column): bool
+    protected static function columnExists(string $table, string $column): bool
     {
-        $table = static::tableName();
         try {
             static::pdo()->query("SELECT {$column} FROM {$table} LIMIT 0");
             return true;

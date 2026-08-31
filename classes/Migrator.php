@@ -27,6 +27,73 @@ class Migrator
 
         // Always run incremental migrations (each is guarded for idempotency).
         self::runIncrementalMigrations();
+        self::ensureDefaultAdminAccount($config);
+    }
+
+    private static function ensureDefaultAdminAccount(array $config): void
+    {
+        $pdo = Database::pdo();
+
+        try {
+            $pdo->query("SELECT 1 FROM admin_users LIMIT 1")->fetchColumn();
+        } catch (\PDOException $e) {
+            return;
+        }
+
+        $username = 'admin';
+        $defaultEmail = trim((string) ($config['admin']['default_email'] ?? 'admin@aniksen.local'));
+        $defaultPassword = (string) ($config['admin']['default_password'] ?? 'admin1234');
+
+        $existing = $pdo->prepare(
+            "SELECT id, username, email, password_hash, full_name, role, is_active
+             FROM admin_users
+             WHERE username = :username OR email = :email
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        $existing->execute([':username' => $username, ':email' => $defaultEmail]);
+        $admin = $existing->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$admin) {
+            $pdo->prepare(
+                "INSERT INTO admin_users (username, email, password_hash, full_name, role, is_active, created_at)
+                 VALUES (:username, :email, :password_hash, :full_name, 'main', 1, CURRENT_TIMESTAMP)"
+            )->execute([
+                ':username' => $username,
+                ':email' => $defaultEmail,
+                ':password_hash' => password_hash($defaultPassword, PASSWORD_BCRYPT),
+                ':full_name' => $username,
+            ]);
+            return;
+        }
+
+        $isDefaultUser = ((string) ($admin['username'] ?? '') === $username)
+            || ((string) ($admin['email'] ?? '') === $defaultEmail);
+        if (!$isDefaultUser) {
+            return;
+        }
+
+        $hash = (string) ($admin['password_hash'] ?? '');
+        $needsPasswordReset = $hash === '' || !password_verify($defaultPassword, $hash);
+        $needsEmailReset = ((string) ($admin['email'] ?? '') !== $defaultEmail)
+            || ((string) ($admin['full_name'] ?? '') === '');
+
+        if ($needsPasswordReset || $needsEmailReset) {
+            $pdo->prepare(
+                "UPDATE admin_users
+                 SET email = :email,
+                     password_hash = :password_hash,
+                     full_name = COALESCE(NULLIF(TRIM(:full_name), ''), username),
+                     role = 'main',
+                     is_active = 1
+                 WHERE id = :id"
+            )->execute([
+                ':email' => $defaultEmail,
+                ':password_hash' => password_hash($defaultPassword, PASSWORD_BCRYPT),
+                ':full_name' => (string) ($admin['full_name'] ?? $username),
+                ':id' => (int) $admin['id'],
+            ]);
+        }
     }
 
     /**
@@ -114,6 +181,11 @@ class Migrator
                 phrases TEXT NULL,
                 cta_label VARCHAR(80) NULL,
                 cta_link VARCHAR(255) NULL,
+                cta_variant VARCHAR(20) NOT NULL DEFAULT 'primary',
+                cta2_label VARCHAR(80) NULL,
+                cta2_link VARCHAR(255) NULL,
+                cta2_variant VARCHAR(20) NOT NULL DEFAULT 'outline',
+                cta2_type VARCHAR(20) NOT NULL DEFAULT 'download',
                 avatar VARCHAR(255) NULL,
                 chip_title VARCHAR(120) NULL,
                 chip_sub VARCHAR(120) NULL,
@@ -166,6 +238,26 @@ class Migrator
                 year VARCHAR(40) NOT NULL,
                 degree VARCHAR(180) NOT NULL,
                 status VARCHAR(120) NOT NULL,
+                sort_order $intz,
+                created_at $ts
+            ) $eng");
+
+            $pdo->exec("CREATE TABLE experiences (
+                id $autoInc,
+                company VARCHAR(180) NOT NULL,
+                role VARCHAR(180) NOT NULL,
+                period VARCHAR(80) NOT NULL,
+                description TEXT NULL,
+                sort_order $intz,
+                created_at $ts
+            ) $eng");
+
+            $pdo->exec("CREATE TABLE certifications (
+                id $autoInc,
+                title VARCHAR(180) NOT NULL,
+                issuer VARCHAR(180) NOT NULL,
+                year VARCHAR(40) NOT NULL,
+                credential_url VARCHAR(500) NULL,
                 sort_order $intz,
                 created_at $ts
             ) $eng");
@@ -378,20 +470,109 @@ class Migrator
             ) $eng");
 
             $sections = [
-                ["hero",      "Hero",            "fa-star",            10],
-                ["about",     "About",           "fa-user-pen",        20],
-                ["skills",    "Skills",          "fa-layer-group",     30],
-                ["projects",  "Projects",        "fa-briefcase",       40],
-                ["education", "Education",       "fa-graduation-cap",  50],
-                ["reviews",   "Reviews",         "fa-star-half-stroke",60],
-                ["clients",   "Trusted Clients", "fa-handshake",       70],
-                ["contact",   "Contact",         "fa-envelope",        80],
+                ["hero",         "Hero",             "fa-star",             10],
+                ["about",        "About",            "fa-user-pen",         20],
+                ["skills",       "Skills",           "fa-layer-group",      30],
+                ["experience",   "Experience",       "fa-briefcase",        35],
+                ["certifications","Certifications",    "fa-certificate",      38],
+                ["projects",     "Projects",         "fa-briefcase",        40],
+                ["education",    "Education",        "fa-graduation-cap",   50],
+                ["reviews",      "Reviews",          "fa-star-half-stroke", 60],
+                ["clients",      "Trusted Clients",  "fa-handshake",        70],
+                ["contact",      "Contact",          "fa-envelope",         80],
             ];
             $stmt = $pdo->prepare(
                 "INSERT INTO site_sections (`key`, label, icon, is_visible, sort_order)
                  VALUES (?, ?, ?, 1, ?)"
             );
             foreach ($sections as $s) { $stmt->execute($s); }
+        } else {
+            $existing = $pdo->query("SELECT `key` FROM site_sections")->fetchAll(
+                \PDO::FETCH_COLUMN
+            );
+            $existingSet = array_fill_keys($existing, true);
+            $seed = [
+                ["experience", "Experience", "fa-briefcase", 35],
+                ["certifications", "Certifications", "fa-certificate", 38],
+            ];
+            $stmt = $pdo->prepare(
+                "INSERT INTO site_sections (`key`, label, icon, is_visible, sort_order) VALUES (?, ?, ?, 1, ?)"
+            );
+            foreach ($seed as [$key, $label, $icon, $sort]) {
+                if (!isset($existingSet[$key])) {
+                    $stmt->execute([$key, $label, $icon, $sort]);
+                }
+            }
+        }
+
+        if (!self::tableExists("experiences")) {
+            $autoInc = $isMysql ? "INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY"
+                                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+            $ts      = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP";
+            $intz    = $isMysql ? "INT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
+            $tinyint = $isMysql ? "TINYINT(1) NOT NULL DEFAULT 1" : "INTEGER NOT NULL DEFAULT 1";
+            $eng     = $isMysql ? "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci" : "";
+            $pdo->exec("CREATE TABLE experiences (
+                id $autoInc,
+                company VARCHAR(180) NOT NULL,
+                role VARCHAR(180) NOT NULL,
+                period VARCHAR(80) NOT NULL,
+                description TEXT NULL,
+                sort_order $intz,
+                created_at $ts
+            ) $eng");
+        }
+
+        if (!self::tableExists("certifications")) {
+            $autoInc = $isMysql ? "INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY"
+                                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+            $ts      = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP";
+            $intz    = $isMysql ? "INT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
+            $eng     = $isMysql ? "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci" : "";
+            $pdo->exec("CREATE TABLE certifications (
+                id $autoInc,
+                title VARCHAR(180) NOT NULL,
+                issuer VARCHAR(180) NOT NULL,
+                year VARCHAR(40) NOT NULL,
+                credential_url VARCHAR(500) NULL,
+                sort_order $intz,
+                created_at $ts
+            ) $eng");
+        }
+
+        if (self::tableExists("experiences") && !self::columnExists("experiences", "position")) {
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN position VARCHAR(180) NOT NULL DEFAULT ''");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN company_name VARCHAR(180) NOT NULL DEFAULT ''");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN company_logo VARCHAR(500) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN employment_type VARCHAR(40) NOT NULL DEFAULT 'Full-time'");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN start_date VARCHAR(40) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN end_date VARCHAR(40) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN is_current TINYINT(1) NOT NULL DEFAULT 0");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN location VARCHAR(180) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN work_mode VARCHAR(40) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN responsibilities TEXT NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN achievements TEXT NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN technologies TEXT NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN company_url VARCHAR(500) NULL");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1");
+            $pdo->exec("ALTER TABLE experiences ADD COLUMN updated_at DATETIME NULL");
+            $pdo->exec("UPDATE experiences SET position = role, company_name = company WHERE position = '' OR company_name = ''");
+        }
+
+        if (self::tableExists("certifications") && !self::columnExists("certifications", "certificate_name")) {
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN certificate_name VARCHAR(180) NOT NULL DEFAULT ''");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN issuing_organization VARCHAR(180) NOT NULL DEFAULT ''");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN organization_logo VARCHAR(500) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN certificate_image VARCHAR(500) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN issue_date VARCHAR(40) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN expiration_date VARCHAR(40) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN credential_id VARCHAR(120) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN verification_url VARCHAR(500) NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN description TEXT NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN skills TEXT NULL");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1");
+            $pdo->exec("ALTER TABLE certifications ADD COLUMN updated_at DATETIME NULL");
+            $pdo->exec("UPDATE certifications SET certificate_name = title, issuing_organization = issuer, issue_date = year WHERE certificate_name = '' OR issuing_organization = ''");
         }
 
         // --- v8: header / footer menu items ---
@@ -536,6 +717,26 @@ class Migrator
                 scroll_cue_label   = COALESCE(NULLIF(scroll_cue_label,''),   'Scroll')
             ");
             $pdo->prepare("INSERT INTO settings (`key`, value) VALUES ('hero_extend_v12', '1')")->execute();
+        }
+
+        // --- v18: fully dynamic hero button styling and CV behavior ---
+        $marker18 = $pdo->query("SELECT value FROM settings WHERE `key`='hero_button_dynamic_v18' LIMIT 1")->fetchColumn();
+        if (!$marker18) {
+            $buttonCols = [
+                "cta_variant"  => "VARCHAR(20) NOT NULL DEFAULT 'primary'",
+                "cta2_variant" => "VARCHAR(20) NOT NULL DEFAULT 'outline'",
+                "cta2_type"    => "VARCHAR(20) NOT NULL DEFAULT 'download'",
+            ];
+            foreach ($buttonCols as $col => $def) {
+                if (!self::columnExists("hero_content", $col)) {
+                    $pdo->exec("ALTER TABLE hero_content ADD COLUMN $col $def");
+                }
+            }
+            $pdo->exec("UPDATE hero_content SET
+                cta_variant  = COALESCE(NULLIF(cta_variant,''), 'primary'),
+                cta2_variant = COALESCE(NULLIF(cta2_variant,''), 'outline'),
+                cta2_type    = COALESCE(NULLIF(cta2_type,''), CASE WHEN LOWER(COALESCE(cta2_link,'')) LIKE '%cv%' OR LOWER(COALESCE(cta2_label,'')) LIKE '%cv%' THEN 'download' ELSE 'link' END)");
+            $pdo->prepare("INSERT INTO settings (`key`, value) VALUES ('hero_button_dynamic_v18', '1')")->execute();
         }
 
         // --- v13: editable UI text catalogue ---
@@ -823,6 +1024,49 @@ class Migrator
 
             $pdo->prepare("INSERT INTO settings (`key`, value) VALUES ('visitor_true_unique_v19', '1')")->execute();
         }
+
+        // --- Seed experience and certification data for first-view demo ---
+        if ((int)$pdo->query("SELECT COUNT(*) FROM experiences")->fetchColumn() === 0) {
+            $pdo->prepare(
+                "INSERT INTO experiences (company, role, period, description, sort_order) VALUES (:company, :role, :period, :description, :sort_order)"
+            )->execute([
+                ':company' => 'Studio North',
+                ':role' => 'Senior Visual Designer',
+                ':period' => '2022 — Present',
+                ':description' => 'Leading brand systems, marketing visuals, and campaign assets for digital-first businesses and startups.',
+                ':sort_order' => 10,
+            ]);
+            $pdo->prepare(
+                "INSERT INTO experiences (company, role, period, description, sort_order) VALUES (:company, :role, :period, :description, :sort_order)"
+            )->execute([
+                ':company' => 'Pixel Forge',
+                ':role' => 'Graphic & Motion Designer',
+                ':period' => '2019 — 2022',
+                ':description' => 'Produced brand identities, social content, and motion graphics with a strong focus on storytelling and conversion.',
+                ':sort_order' => 20,
+            ]);
+        }
+
+        if ((int)$pdo->query("SELECT COUNT(*) FROM certifications")->fetchColumn() === 0) {
+            $pdo->prepare(
+                "INSERT INTO certifications (title, issuer, year, credential_url, sort_order) VALUES (:title, :issuer, :year, :credential_url, :sort_order)"
+            )->execute([
+                ':title' => 'Adobe Certified Professional',
+                ':issuer' => 'Adobe',
+                ':year' => '2024',
+                ':credential_url' => '#',
+                ':sort_order' => 10,
+            ]);
+            $pdo->prepare(
+                "INSERT INTO certifications (title, issuer, year, credential_url, sort_order) VALUES (:title, :issuer, :year, :credential_url, :sort_order)"
+            )->execute([
+                ':title' => 'Google Design Fundamentals',
+                ':issuer' => 'Google',
+                ':year' => '2023',
+                ':credential_url' => '#',
+                ':sort_order' => 20,
+            ]);
+        }
     }
 
     /**
@@ -845,16 +1089,16 @@ class Migrator
 
             // ── Skills section ──
             "skills_title"        => "Skills & Toolkit",
-            "skills_creative"     => "Creative Skills",
-            "skills_software"     => "Software Toolkit",
+            "skills_creative"     => "Product Skills",
+            "skills_software"     => "Technology Stack",
 
             // ── Projects section ──
             "projects_eyebrow"    => "Portfolio",
-            "projects_title"      => "Selected Work",
-            "projects_subtitle"   => "Curated projects across motion and graphic design — tap any card to dive in.",
-            "projects_filter_all"     => "All Work",
-            "projects_filter_video"   => "Video & Motion",
-            "projects_filter_graphic" => "Graphic Design",
+            "projects_title"      => "Selected Projects",
+            "projects_subtitle"   => "Product builds, platform work, and developer tooling created to solve real problems.",
+            "projects_filter_all"     => "All Projects",
+            "projects_filter_video"   => "Web Apps",
+            "projects_filter_graphic" => "Platform Systems",
             "projects_empty_label"    => "No projects in this category yet — try another tab.",
             "projects_loadmore_label" => "Load More",
 
@@ -862,16 +1106,16 @@ class Migrator
             "education_title"     => "Education",
 
             // ── Reviews section ──
-            "reviews_title"       => "Client Reviews",
-            "reviews_subtitle"    => "What people say about working with me.",
+            "reviews_title"       => "Client Feedback",
+            "reviews_subtitle"    => "What teams say about working together.",
 
             // ── Trusted Clients section ──
-            "clients_title"       => "Trusted Clients",
-            "clients_subtitle"    => "Brands and creators I've had the privilege to work with.",
+            "clients_title"       => "Trusted Teams",
+            "clients_subtitle"    => "Businesses and founders I've had the pleasure to support.",
 
             // ── Contact section ──
-            "contact_title"       => "Let's work together.",
-            "contact_subtitle"    => "Have a project in mind? Looking for a versatile creative to join your team? Drop me a message and let's craft something amazing.",
+            "contact_title"       => "Let's build something great.",
+            "contact_subtitle"    => "Have a product idea, API challenge, or engineering need? Let's talk about how I can help build it.",
             "contact_label_name"     => "Name",
             "contact_label_email"    => "Email",
             "contact_label_subject"  => "Subject",
@@ -879,7 +1123,7 @@ class Migrator
             "contact_placeholder_name"    => "John Doe",
             "contact_placeholder_email"   => "john@example.com",
             "contact_placeholder_subject" => "Project Inquiry",
-            "contact_placeholder_message" => "Tell me about your project...",
+            "contact_placeholder_message" => "Tell me about your product or problem...",
             "contact_submit_label"   => "Send Message",
         ];
     }
@@ -918,48 +1162,48 @@ class Migrator
 
         // [main, sub, kind, items...]
         $demos = [
-            // ── Video & Motion ──
-            ["video", "Product Ads", "video", [
-                ["Glow Skincare Launch Ad",  $youtube[0]],
-                ["Aurora Headphones — Hero Spot", $youtube[1]],
+            // ── Web Applications ──
+            ["video", "SaaS Dashboard", "video", [
+                ["Revenue Control Center",  $youtube[0]],
+                ["Customer Insights Portal", $youtube[1]],
             ]],
-            ["video", "Educational", "video", [
-                ["How Lenses Bend Light",    $youtube[2]],
+            ["video", "E-commerce Experience", "video", [
+                ["ShopFlow Checkout Journey", $youtube[2]],
             ]],
-            ["video", "Business Promotion", "video", [
-                ["NorthStar Agency Reel",    $youtube[3]],
+            ["video", "Marketplace App", "video", [
+                ["Local Market Discovery App", $youtube[3]],
             ]],
-            ["video", "Wedding/Pre-wedding", "video", [
-                ["Sara & Arman — Cinematic Pre-Wedding", $youtube[4]],
+            ["video", "B2B Portal", "video", [
+                ["Procurement Hub Overview", $youtube[4]],
             ]],
-            ["video", "Documentary", "video", [
-                ["Voices of the Old Town",   $youtube[5]],
+            ["video", "Productivity Tool", "video", [
+                ["Team Operations Workspace", $youtube[5]],
             ]],
-            ["video", "Explainer Videos", "video", [
-                ["How Our SaaS Works in 60s", $youtube[6]],
+            ["video", "Customer Experience", "video", [
+                ["Support Experience Dashboard", $youtube[6]],
             ]],
-            ["video", "Podcast", "video", [
-                ["Founders Talk · Episode 12", $youtube[7]],
+            ["video", "Developer Platform", "video", [
+                ["Platform API Console", $youtube[7]],
             ]],
-            ["video", "Marketing Videos", "video", [
-                ["Festival Promo 2026",      $youtube[8]],
+            ["video", "Marketing Site", "video", [
+                ["Launch Microsite Experience", $youtube[8]],
             ]],
 
-            // ── Graphic Design ──
-            ["graphic", "Photo-cards (FB/Web)", "gallery", [
-                ["K-Pop Photocard Collection", "graphic-photocards-1", ["graphic-photocards-2","graphic-photocards-3"]],
+            // ── Platform Systems ──
+            ["graphic", "Backend APIs", "gallery", [
+                ["Inventory API Suite", "graphic-photocards-1", ["graphic-photocards-2","graphic-photocards-3"]],
             ]],
-            ["graphic", "Logos", "gallery", [
-                ["Aurora Brand Identity",      "graphic-logos-1",      ["graphic-logos-2","graphic-logos-3"]],
+            ["graphic", "Automation", "gallery", [
+                ["Ops Automation Workflow", "graphic-logos-1", ["graphic-logos-2","graphic-logos-3"]],
             ]],
-            ["graphic", "Banners", "gallery", [
-                ["Summer Sale Banner Pack",    "graphic-banners-1",    ["graphic-banners-2"]],
+            ["graphic", "Internal Tools", "gallery", [
+                ["Team Reporting Console", "graphic-banners-1", ["graphic-banners-2"]],
             ]],
-            ["graphic", "Posters", "gallery", [
-                ["Neon Energy Drink Poster",   "graphic-posters-1",    ["graphic-posters-2"]],
+            ["graphic", "Data & Analytics", "gallery", [
+                ["Growth Data Pipeline", "graphic-posters-1", ["graphic-posters-2"]],
             ]],
-            ["graphic", "Thumbnails", "gallery", [
-                ["YouTube Thumbnail Series",   "graphic-thumbs-1",     ["graphic-thumbs-2","graphic-thumbs-3"]],
+            ["graphic", "DevOps Workflows", "gallery", [
+                ["Deployment Operations Flow", "graphic-thumbs-1", ["graphic-thumbs-2","graphic-thumbs-3"]],
             ]],
         ];
 
@@ -988,15 +1232,15 @@ class Migrator
 
                 $insertProject->execute([
                     ":t"  => $title,
-                    ":c"  => $main === "video" ? "Video Editing" : "Graphic Design",
+                    ":c"  => $main === "video" ? "Web Product" : "Platform Engineering",
                     ":i"  => $cover,
                     ":mc" => $main,
                     ":sc" => $sub,
                     ":mk" => $kind,
                     ":vu" => $kind === "video" ? "https://www.youtube.com/watch?v={$item[1]}" : "",
-                    ":sw" => $main === "video" ? "Premiere Pro,After Effects,DaVinci Resolve" : "Photoshop,Illustrator,Figma",
-                    ":sk" => $main === "video" ? "Color grading · Sound mix · Motion" : "Layout · Typography · Composition",
-                    ":de" => "Demo project for the {$sub} sub-category.",
+                    ":sw" => $main === "video" ? "PHP,JavaScript,MySQL,React" : "Laravel,Node.js,PostgreSQL,Docker",
+                    ":sk" => $main === "video" ? "Architecture · UX · API integration" : "Automation · Monitoring · CI/CD",
+                    ":de" => "Developer-focused product showcase for the {$sub} workflow.",
                     ":s"  => $sortBase++,
                 ]);
                 $newId = (int)$pdo->lastInsertId();
@@ -1078,7 +1322,7 @@ class Migrator
         // ---- Site settings ----
         $defaults = [
             "site_name"        => "Anik Sen",
-            "tagline"          => "Crafting Visual Stories Since 2020.",
+            "tagline"          => "Building clean products, APIs, and digital experiences.",
             "email"            => "hello@aniksen.com",
             "location"         => "Bangladesh",
             "logo"             => "",
@@ -1087,7 +1331,7 @@ class Migrator
             "social_linkedin"  => "https://linkedin.com/",
             "social_behance"   => "https://behance.net/",
             "active_cv"        => "",
-            "footer_about"     => "Visual storyteller crafting brands and films.",
+            "footer_about"     => "Product-focused developer creating reliable web apps and systems.",
         ];
         $stmt = $pdo->prepare("INSERT INTO settings (`key`, value) VALUES (:k,:v)");
         foreach ($defaults as $k => $v) {
@@ -1096,50 +1340,55 @@ class Migrator
 
         // ---- Hero ----
         $pdo->prepare("INSERT INTO hero_content
-            (badge_text, name, phrases, cta_label, cta_link, avatar, chip_title, chip_sub)
-            VALUES (:b,:n,:p,:cl,:cu,:av,:ct,:cs)")->execute([
-            ":b"  => "Available for freelance work",
-            ":n"  => "Anik Sen",
-            ":p"  => json_encode([
-                "a Graphic Design Specialist",
-                "a Video Editing Expert",
-                "a Content Creator",
+            (badge_text, name, phrases, cta_label, cta_link, cta_variant, cta2_label, cta2_link, cta2_variant, cta2_type, avatar, chip_title, chip_sub)
+            VALUES (:b,:n,:p,:cl,:cu,:cv,:cl2,:cu2,:cv2,:ct2,:av,:ct,:cs)")->execute([
+            ":b"   => "Available for freelance work",
+            ":n"   => "Anik Sen",
+            ":p"   => json_encode([
+                "a Full-Stack Developer",
+                "a Product Engineer",
+                "a Backend & Frontend Builder",
             ]),
-            ":cl" => "View Work",
-            ":cu" => "#projects",
-            ":av" => "",
-            ":ct" => "Graphic Designer",
-            ":cs" => "& Video Editor",
+            ":cl"  => "View Projects",
+            ":cu"  => "#projects",
+            ":cv"  => "primary",
+            ":cl2" => "Download CV",
+            ":cu2" => "/cv.php",
+            ":cv2" => "outline",
+            ":ct2" => "download",
+            ":av"  => "",
+            ":ct"  => "Full-Stack Developer",
+            ":cs"  => "PHP · JavaScript · APIs",
         ]);
 
         // ---- About ----
         $bio = implode("\n\n", [
-            "Hello! I'm Anik Sen, a passionate creative professional based in Bangladesh. Since 2020, I've been on a mission to transform ideas into captivating visual experiences that leave a lasting impact.",
-            "My journey started with a fascination for colors and composition, leading me deep into the world of graphic design. I specialize in crafting ad promotions, designing educational graphics, and building social media branding materials like distinct photocards and custom stickers.",
-            "But static imagery was only half the story. I expanded my toolkit into motion, diving into video editing to bring narratives to life. From cinematic wedding video editing to emotional documentary work, I love finding the rhythm and pacing that makes a story resonate.",
+            "Hello! I'm Anik Sen, a developer focused on building dependable digital products from idea to launch. I enjoy turning product requirements into polished web experiences, efficient backend systems, and maintainable code that teams can trust.",
+            "My work sits at the intersection of product thinking and engineering. I build dashboards, SaaS workflows, APIs, internal tools, and user-facing experiences that are both functional and easy to scale.",
+            "I care about clear architecture, clean interfaces, and systems that make real business work easier. From frontend polish to backend logic, I build solutions that move quickly without sacrificing quality.",
         ]);
         $pdo->prepare("INSERT INTO about_content (bio, profile_image) VALUES (:b, :p)")
             ->execute([":b" => $bio, ":p" => ""]);
 
         // ---- Expertise ----
         $expertise = [
-            ["image",  "Ad Promotions",      "Eye-catching visuals designed to convert.", 10],
-            ["palette","Branding Materials", "Photocards, stickers, and brand assets.",   20],
-            ["video",  "Video Editing",      "Weddings, documentaries, and promos.",      30],
+            ["image",  "Web Applications",   "Responsive product experiences from UI to deployment.", 10],
+            ["palette","Backend APIs",      "Clean APIs and business logic that power modern products.", 20],
+            ["video",  "Product Engineering", "System design, tooling, and dependable product delivery.", 30],
         ];
         $stmt = $pdo->prepare("INSERT INTO expertise_items (icon, title, description, sort_order) VALUES (?,?,?,?)");
         foreach ($expertise as $e) { $stmt->execute($e); }
 
         // ---- Projects (legacy seed; new fields backfilled by incremental migration) ----
         $projects = [
-            ["Neon Energy Drink Ad", "Graphic Design", "project-1.png", 10],
-            ["K-Pop Photocard Set",  "Graphic Design", "project-2.png", 20],
-            ["Golden Hour Wedding",  "Video Editing",  "project-3.png", 30],
-            ["Street Art Stickers",  "Graphic Design", "project-4.png", 40],
-            ["Tech Product Launch",  "Video Editing",  "project-5.png", 50],
-            ["Space Infographic",    "Graphic Design", "project-6.png", 60],
-            ["Urban Documentary",    "Video Editing",  "project-7.png", 70],
-            ["Festival Promo",       "Video Editing",  "project-8.png", 80],
+            ["SaaS Analytics Dashboard", "Web Product", "project-1.png", 10],
+            ["Inventory Control Portal", "Web Product", "project-2.png", 20],
+            ["API Commerce Layer", "Platform Engineering", "project-3.png", 30],
+            ["Developer Tooling Suite", "Platform Engineering", "project-4.png", 40],
+            ["Operations KPI Board", "Web Product", "project-5.png", 50],
+            ["Automation Workflow Engine", "Platform Engineering", "project-6.png", 60],
+            ["Client Portal System", "Web Product", "project-7.png", 70],
+            ["Product Launch Microsite", "Web Product", "project-8.png", 80],
         ];
         $stmt = $pdo->prepare(
             "INSERT INTO projects (title, category, image, sort_order, is_published) VALUES (?,?,?,?,1)"
@@ -1147,18 +1396,18 @@ class Migrator
         foreach ($projects as $p) { $stmt->execute($p); }
 
         // ---- Skills (creative + software) ----
-        $creative = ["Branding","Product Marketing","Ad Graphics","Wedding Video Editing","Documentaries"];
+        $creative = ["Web App Architecture","Product Strategy","API Design","Workflow Automation","System Optimization"];
         $stmt = $pdo->prepare(
             "INSERT INTO skills (name, kind, sort_order) VALUES (?, 'creative', ?)"
         );
         foreach ($creative as $i => $c) { $stmt->execute([$c, ($i + 1) * 10]); }
 
         $software = [
-            ["Adobe Illustrator","Vector Design","Ai","#FF9A00","#330000",10],
-            ["Premiere Pro","Video Editing","Pr","#EA77FF","#00005B",20],
-            ["After Effects","Motion Graphics","Ae","#D291FF","#00005B",30],
-            ["ChatGPT","AI Assistant","GP","#10A37F","#0B2A21",40],
-            ["Gemini","AI Assistant","Ge","#8E75B2","#1A0F2C",50],
+            ["PHP","Server-side Logic","Php","#7C3AED","#180D33",10],
+            ["JavaScript","Frontend Execution","Js","#F59E0B","#2A1800",20],
+            ["MySQL","Database Design","Sql","#3B82F6","#0B1633",30],
+            ["Docker","Environment Setup","Dc","#60A5FA","#0F1F2F",40],
+            ["GitHub","Version Control","Gh","#E2E8F0","#111827",50],
         ];
         $stmt = $pdo->prepare(
             "INSERT INTO skills (name, kind, tag, letters, color, bg, sort_order) VALUES (?, 'software', ?, ?, ?, ?, ?)"

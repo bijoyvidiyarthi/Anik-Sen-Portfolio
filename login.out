@@ -1,0 +1,694 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Dashboard — Admin</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          :root { --grad-1:#6366f1; --grad-2:#a855f7; --grad-3:#ec4899; }
+          html, body { font-family: 'Inter', system-ui, sans-serif; }
+          body {
+            background:
+              radial-gradient(1100px 700px at 5% -10%, rgba(99,102,241,.30), transparent 60%),
+              radial-gradient(900px 600px at 100% 20%, rgba(236,72,153,.25), transparent 60%),
+              radial-gradient(900px 700px at 50% 110%, rgba(34,211,238,.20), transparent 60%),
+              #07080f;
+            color: #e6e8f1;
+            min-height: 100vh;
+          }
+          .glass {
+            background: rgba(20, 22, 38, .55);
+            backdrop-filter: blur(18px) saturate(140%);
+            -webkit-backdrop-filter: blur(18px) saturate(140%);
+            border: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 20px 60px -10px rgba(2,4,18,.6), inset 0 1px 0 rgba(255,255,255,.05);
+          }
+          .glass-strong {
+            background: rgba(14, 16, 30, .75);
+            backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid rgba(255,255,255,.10);
+          }
+          .grad-text {
+            background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+          }
+          .btn {
+            display: inline-flex; align-items: center; gap: .5rem;
+            padding: .55rem 1rem; border-radius: .65rem; font-weight: 600;
+            transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+          }
+          .btn-primary {
+            background: linear-gradient(135deg, var(--grad-1), var(--grad-3));
+            color: white;
+            box-shadow: 0 12px 30px -8px rgba(168,85,247,.55);
+          }
+          .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 16px 40px -8px rgba(168,85,247,.65); }
+          .btn-ghost { background: rgba(255,255,255,.06); color: #e6e8f1; border: 1px solid rgba(255,255,255,.08); }
+          .btn-ghost:hover { background: rgba(255,255,255,.10); }
+          .btn-danger { background: rgba(244,63,94,.15); color: #ff8aa1; border: 1px solid rgba(244,63,94,.35); }
+          .btn-danger:hover { background: rgba(244,63,94,.25); }
+          .input, .select, .textarea {
+            width: 100%; padding: .65rem .8rem; border-radius: .6rem;
+            background: rgba(8, 10, 24, .55); border: 1px solid rgba(255,255,255,.08);
+            color: #e6e8f1; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+          }
+          .input:focus, .select:focus, .textarea:focus {
+            border-color: rgba(168,85,247,.55);
+            box-shadow: 0 0 0 3px rgba(168,85,247,.18);
+          }
+          .label { font-size: .8rem; font-weight: 600; color: #b9bdd1; margin-bottom: .35rem; display:block; }
+          .nav-link {
+            display:flex; align-items:center; gap:.7rem; padding:.6rem .85rem;
+            border-radius: .6rem; color:#c5c9dd; font-weight:500; transition:all .15s;
+            position: relative;
+          }
+          .nav-link:hover { background: rgba(255,255,255,.05); color:#fff; }
+          .nav-link.active {
+            background: linear-gradient(135deg, rgba(99,102,241,.25), rgba(236,72,153,.20));
+            color:#fff;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+          }
+          .nav-link.active::before {
+            content:""; position:absolute; left:-12px; top:8px; bottom:8px; width:3px;
+            background: linear-gradient(180deg, var(--grad-1), var(--grad-3));
+            border-radius: 99px;
+          }
+          .badge {
+            display:inline-flex; align-items:center; gap:.3rem;
+            padding:.15rem .55rem; border-radius:99px; font-size:.7rem; font-weight:600;
+          }
+          .badge-info    { background: rgba(99,102,241,.15); color:#a5b4fc; border:1px solid rgba(99,102,241,.3); }
+          .badge-success { background: rgba(16,185,129,.15); color:#6ee7b7; border:1px solid rgba(16,185,129,.3); }
+          .badge-warn    { background: rgba(245,158,11,.15); color:#fcd34d; border:1px solid rgba(245,158,11,.3); }
+          .badge-danger  { background: rgba(244,63,94,.15);  color:#fda4af; border:1px solid rgba(244,63,94,.3); }
+          table.data { width:100%; border-collapse: collapse; }
+          table.data th { text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:#9aa0bd; padding:.65rem .8rem; border-bottom:1px solid rgba(255,255,255,.07); }
+          table.data td { padding:.85rem .8rem; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; font-size:.9rem; }
+          table.data tr:hover td { background: rgba(255,255,255,.025); }
+          .alert { padding:.75rem 1rem; border-radius:.6rem; margin-bottom:1rem; font-size:.9rem; }
+          .alert-success { background: rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3); color:#a7f3d0; }
+          .alert-error   { background: rgba(244,63,94,.12);  border:1px solid rgba(244,63,94,.3);  color:#fecdd3; }
+          .alert-info    { background: rgba(99,102,241,.12); border:1px solid rgba(99,102,241,.3); color:#c7d2fe; }
+          /* Toast notifications (theme-consistent glassmorphic) */
+          #toast-stack {
+            position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 80;
+            display: flex; flex-direction: column; gap: .55rem; pointer-events: none;
+          }
+          .toast {
+            pointer-events: auto;
+            min-width: 280px; max-width: 380px;
+            display: flex; align-items: flex-start; gap: .65rem;
+            padding: .75rem .9rem; border-radius: .75rem;
+            background: rgba(20, 22, 38, .82);
+            backdrop-filter: blur(22px) saturate(160%);
+            border: 1px solid rgba(255,255,255,.10);
+            box-shadow: 0 22px 60px -12px rgba(2,4,18,.7);
+            color: #e6e8f1; font-size: .88rem; line-height: 1.35;
+            transform: translateX(120%); opacity: 0;
+            transition: transform .35s cubic-bezier(.2,.9,.25,1), opacity .25s;
+          }
+          .toast.show { transform: translateX(0); opacity: 1; }
+          .toast .toast-icon {
+            width: 1.9rem; height: 1.9rem; border-radius: .5rem; flex: 0 0 auto;
+            display:flex; align-items:center; justify-content:center; font-size: .9rem;
+          }
+          .toast.success .toast-icon { background: rgba(16,185,129,.18); color:#6ee7b7; border:1px solid rgba(16,185,129,.35); }
+          .toast.error   .toast-icon { background: rgba(244,63,94,.18);  color:#fda4af; border:1px solid rgba(244,63,94,.35); }
+          .toast.info    .toast-icon { background: rgba(99,102,241,.18); color:#a5b4fc; border:1px solid rgba(99,102,241,.35); }
+          .toast .toast-close {
+            background: transparent; border: 0; color: rgba(255,255,255,.5);
+            cursor: pointer; padding: 0 .15rem; font-size: .85rem; margin-left: auto;
+          }
+          .toast .toast-close:hover { color: #fff; }
+          @media (max-width: 1023px) {
+            #sidebar {
+              transform: translateX(-110%);
+              transition: transform .25s ease;
+              position: fixed;
+              top: 0; left: 0;
+              height: 100vh;
+              max-height: 100vh;
+              overflow-y: auto;
+              z-index: 50;
+              -webkit-overflow-scrolling: touch;
+              overscroll-behavior: contain;
+            }
+            #sidebar.open { transform: translateX(0); }
+            #scrim { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:40; }
+            #sidebar.open + #scrim { display:block; }
+          }
+          /* Glassmorphic scrollbar — applied to the sidebar (and any element
+             that opts in via .sidebar-scroll). Uses a translucent gradient
+             thumb so it blends with the glass-strong sidebar background. */
+          .sidebar-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168,85,247,.45) transparent;
+          }
+          .sidebar-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+          .sidebar-scroll::-webkit-scrollbar-track {
+            background: rgba(255,255,255,.02);
+            border-radius: 99px;
+          }
+          .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(99,102,241,.55), rgba(236,72,153,.55));
+            border-radius: 99px;
+            border: 2px solid rgba(14,16,30,.45);
+            background-clip: padding-box;
+          }
+          .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(99,102,241,.85), rgba(236,72,153,.85));
+            background-clip: padding-box;
+          }
+        </style>
+    </head>
+    <body class="min-h-screen">
+      <div class="flex">
+        <aside id="sidebar"
+       class="glass-strong w-72 shrink-0 border-r border-white/5 px-5 py-6
+              lg:sticky lg:top-0
+              h-screen lg:h-screen overflow-y-auto sidebar-scroll">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+            <i class="fa-solid fa-wand-magic-sparkles text-white"></i>
+        </div>
+        <div class="min-w-0">
+            <div class="font-semibold text-white leading-none truncate">Anik Sen</div>
+            <div class="text-xs text-white/50 mt-1">CMS Console</div>
+        </div>
+    </div>
+
+    <!-- Logged-in admin profile card -->
+    <a href="/admin/account.php"
+       class="flex items-center gap-3 p-3 mb-5 rounded-xl border border-white/10 bg-white/[.04] hover:bg-white/[.07] transition group">
+                    <img src="/uploads/admins/amit-kumar-195e1de6.jpg"
+                 alt="Profile picture"
+                 class="w-11 h-11 rounded-xl object-cover border border-white/10 shrink-0">
+                <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold text-white truncate">admin</div>
+            <div class="text-[11px] text-white/50 truncate">
+                <i class="fa-solid fa-crown text-amber-300 mr-0.5"></i>
+                Main administrator            </div>
+        </div>
+        <i class="fa-solid fa-chevron-right text-white/40 text-xs group-hover:text-white/80 transition"></i>
+    </a>
+
+    <nav class="space-y-1">
+                    <a href="/admin/" class="nav-link active">
+                <i class="fa-solid fa-gauge-high w-5 text-center opacity-80"></i>
+                <span>Dashboard</span>
+            </a>
+                    <a href="/admin/settings.php" class="nav-link ">
+                <i class="fa-solid fa-sliders w-5 text-center opacity-80"></i>
+                <span>Site Settings</span>
+            </a>
+                    <a href="/admin/uitext.php" class="nav-link ">
+                <i class="fa-solid fa-language w-5 text-center opacity-80"></i>
+                <span>UI Text & Labels</span>
+            </a>
+                    <a href="/admin/hero.php" class="nav-link ">
+                <i class="fa-solid fa-star w-5 text-center opacity-80"></i>
+                <span>Hero Section</span>
+            </a>
+                    <a href="/admin/about.php" class="nav-link ">
+                <i class="fa-solid fa-user-pen w-5 text-center opacity-80"></i>
+                <span>About / Bio</span>
+            </a>
+                    <a href="/admin/projects.php" class="nav-link ">
+                <i class="fa-solid fa-briefcase w-5 text-center opacity-80"></i>
+                <span>Projects</span>
+            </a>
+                    <a href="/admin/skills.php" class="nav-link ">
+                <i class="fa-solid fa-layer-group w-5 text-center opacity-80"></i>
+                <span>Skills</span>
+            </a>
+                    <a href="/admin/experience.php" class="nav-link ">
+                <i class="fa-solid fa-briefcase w-5 text-center opacity-80"></i>
+                <span>Experience</span>
+            </a>
+                    <a href="/admin/certifications.php" class="nav-link ">
+                <i class="fa-solid fa-certificate w-5 text-center opacity-80"></i>
+                <span>Certifications</span>
+            </a>
+                    <a href="/admin/education.php" class="nav-link ">
+                <i class="fa-solid fa-graduation-cap w-5 text-center opacity-80"></i>
+                <span>Education</span>
+            </a>
+                    <a href="/admin/reviews.php" class="nav-link ">
+                <i class="fa-solid fa-star-half-stroke w-5 text-center opacity-80"></i>
+                <span>Reviews</span>
+            </a>
+                    <a href="/admin/brandlist.php" class="nav-link ">
+                <i class="fa-solid fa-handshake w-5 text-center opacity-80"></i>
+                <span>Trusted Clients</span>
+            </a>
+                    <a href="/admin/gallery.php" class="nav-link ">
+                <i class="fa-solid fa-images w-5 text-center opacity-80"></i>
+                <span>Image Gallery</span>
+            </a>
+                    <a href="/admin/filehub.php" class="nav-link ">
+                <i class="fa-solid fa-photo-film w-5 text-center opacity-80"></i>
+                <span>Media & Files Hub</span>
+            </a>
+                    <a href="/admin/files.php" class="nav-link ">
+                <i class="fa-solid fa-folder-open w-5 text-center opacity-80"></i>
+                <span>File Library</span>
+            </a>
+                    <a href="/admin/messages.php" class="nav-link ">
+                <i class="fa-solid fa-inbox w-5 text-center opacity-80"></i>
+                <span>Messages</span>
+            </a>
+                    <a href="/admin/sections.php" class="nav-link ">
+                <i class="fa-solid fa-toggle-on w-5 text-center opacity-80"></i>
+                <span>Sections & Menus</span>
+            </a>
+                    <a href="/admin/account.php" class="nav-link ">
+                <i class="fa-solid fa-user-shield w-5 text-center opacity-80"></i>
+                <span>My Account</span>
+            </a>
+                    <a href="/admin/users.php" class="nav-link ">
+                <i class="fa-solid fa-users-gear w-5 text-center opacity-80"></i>
+                <span>Manage Users</span>
+            </a>
+        
+        <a href="/admin/logout.php" class="nav-link text-rose-200 hover:!bg-rose-500/10 mt-3">
+            <i class="fa-solid fa-right-from-bracket w-5 text-center opacity-80"></i>
+            <span>Sign out</span>
+        </a>
+    </nav>
+
+    <div class="mt-8 p-4 rounded-xl border border-white/5 bg-white/[.03]">
+        <div class="text-xs text-white/60 mb-2"><i class="fa-solid fa-shield-halved mr-1"></i> Security tip</div>
+        <div class="text-xs text-white/70 leading-relaxed">
+            Change the default admin password from the
+            <a href="/admin/account.php" class="underline">Account</a> page on first login.
+        </div>
+    </div>
+</aside>
+        <div id="scrim" onclick="document.getElementById('sidebar').classList.remove('open')"></div>
+
+        <main class="flex-1 min-w-0">
+          <header class="glass-strong sticky top-0 z-30 px-5 lg:px-8 py-3 flex items-center justify-between border-b border-white/5">
+            <div class="flex items-center gap-3">
+              <button onclick="document.getElementById('sidebar').classList.toggle('open')"
+                      class="lg:hidden btn btn-ghost p-2" aria-label="Toggle menu">
+                <i class="fa-solid fa-bars"></i>
+              </button>
+              <div>
+                <div class="text-xs text-white/50 leading-none mb-1">Admin</div>
+                <h1 class="text-lg font-semibold text-white">Dashboard</h1>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <a href="/" target="_blank" class="btn btn-ghost text-sm">
+                <i class="fa-solid fa-up-right-from-square"></i><span class="hidden sm:inline">View site</span>
+              </a>
+              <a href="/admin/messages.php" class="btn btn-ghost text-sm relative" title="Inbox">
+                <i class="fa-regular fa-envelope"></i>
+                              </a>
+              <a href="/admin/account.php"
+                 class="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition"
+                 title="My account">
+                                  <img src="/uploads/admins/amit-kumar-195e1de6.jpg"
+                       alt="" class="w-7 h-7 rounded-full object-cover border border-white/10">
+                                <span class="text-sm text-white/80 max-w-[140px] truncate">admin</span>
+              </a>
+              <a href="/admin/logout.php" class="btn btn-ghost text-sm" title="Sign out">
+                <i class="fa-solid fa-right-from-bracket"></i>
+              </a>
+            </div>
+          </header>
+
+          <section class="px-5 lg:px-8 py-6">
+    
+<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+            <a href="#visitor-analytics" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-chart-line text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">11</div>
+            <div class="text-xs text-white/60">Unique Visitors</div>
+        </a>
+            <a href="#visitor-analytics" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-eye text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">10</div>
+            <div class="text-xs text-white/60">Visits Today</div>
+        </a>
+            <a href="/admin/projects.php" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-briefcase text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">3</div>
+            <div class="text-xs text-white/60">Projects</div>
+        </a>
+            <a href="/admin/gallery.php" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-images text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">8</div>
+            <div class="text-xs text-white/60">Galleries</div>
+        </a>
+            <a href="/admin/messages.php" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-inbox text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">1</div>
+            <div class="text-xs text-white/60">Messages</div>
+        </a>
+            <a href="/admin/files.php" class="glass rounded-2xl p-4 hover:scale-[1.02] transition">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-folder-open text-white"></i>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-white/30 text-sm"></i>
+            </div>
+            <div class="mt-3 text-2xl font-bold text-white">0</div>
+            <div class="text-xs text-white/60">Files</div>
+        </a>
+    </div>
+
+<!-- ==================== VISITOR ANALYTICS ==================== -->
+<section id="visitor-analytics" class="glass rounded-2xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-violet-300"></i> Unique visitor analytics
+            </h2>
+            <p class="text-xs text-white/50 mt-1">
+                Each unique visitor counted once per period — repeat visits don't inflate the count. IPs are SHA-256 hashed before storage.
+            </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <div class="inline-flex rounded-xl bg-white/5 border border-white/10 p-1" role="tablist" aria-label="Time range">
+                <button type="button" data-range="weekly"  class="va-tab px-4 py-1.5 text-xs rounded-lg font-medium transition">Weekly</button>
+                <button type="button" data-range="monthly" class="va-tab px-4 py-1.5 text-xs rounded-lg font-medium transition">Monthly</button>
+                <button type="button" data-range="yearly"  class="va-tab px-4 py-1.5 text-xs rounded-lg font-medium transition">Yearly</button>
+            </div>
+            <button id="vaResetBtn" type="button"
+                    class="px-3 py-1.5 text-xs rounded-lg font-medium transition bg-white/5 border border-white/10 text-white/50 hover:text-rose-400 hover:border-rose-400/40"
+                    title="Delete all visitor data and start fresh">
+                <i class="fa-solid fa-trash-can mr-1"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <div class="text-[11px] uppercase tracking-wider text-white/50">In range</div>
+            <div id="vaTotal" class="mt-1 text-xl font-bold text-white">—</div>
+        </div>
+        <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <div class="text-[11px] uppercase tracking-wider text-white/50">Peak day</div>
+            <div id="vaPeak" class="mt-1 text-xl font-bold text-white">—</div>
+        </div>
+        <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <div class="text-[11px] uppercase tracking-wider text-white/50">Average</div>
+            <div id="vaAvg" class="mt-1 text-xl font-bold text-white">—</div>
+        </div>
+    </div>
+
+    <div class="relative h-64">
+        <canvas id="visitorChart"></canvas>
+        <div id="vaEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-white/40 text-sm">
+            <i class="fa-solid fa-chart-area text-3xl mb-2"></i>
+            No visitor data for this range yet.
+        </div>
+    </div>
+</section>
+
+<div class="grid lg:grid-cols-3 gap-5">
+    <div class="glass rounded-2xl p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold flex items-center gap-2">
+                <i class="fa-regular fa-envelope text-pink-400"></i> Recent Messages
+                            </h2>
+            <a href="/admin/messages.php" class="text-xs text-white/60 hover:text-white">View all →</a>
+        </div>
+                    <ul class="divide-y divide-white/5">
+                                    <li class="py-3 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-xs font-bold">
+                            A                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm text-white truncate">anikaks</span>
+                                                            </div>
+                            <div class="text-xs text-white/60 truncate">Website Video</div>
+                        </div>
+                        <div class="text-xs text-white/40 whitespace-nowrap">Apr 29</div>
+                    </li>
+                            </ul>
+            </div>
+
+    <div class="glass rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold flex items-center gap-2"><i class="fa-solid fa-briefcase text-indigo-400"></i> Latest Projects</h2>
+            <a href="/admin/projects.php" class="text-xs text-white/60 hover:text-white">Manage →</a>
+        </div>
+                    <ul class="space-y-2">
+                                    <li class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/5">
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm text-white truncate">dghfvc</div>
+                            <div class="text-xs text-white/50">Web Product</div>
+                        </div>
+                        <a href="/admin/projects.php?edit=34" class="text-white/40 hover:text-white text-sm">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                    </li>
+                                    <li class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/5">
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm text-white truncate">kjjhj</div>
+                            <div class="text-xs text-white/50">Web Product</div>
+                        </div>
+                        <a href="/admin/projects.php?edit=33" class="text-white/40 hover:text-white text-sm">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                    </li>
+                                    <li class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/5">
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm text-white truncate">Street Art Stickers</div>
+                            <div class="text-xs text-white/50">Web Product</div>
+                        </div>
+                        <a href="/admin/projects.php?edit=4" class="text-white/40 hover:text-white text-sm">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                    </li>
+                            </ul>
+            </div>
+</div>
+
+<div class="mt-6 glass rounded-2xl p-5">
+    <h2 class="text-base font-semibold flex items-center gap-2 mb-3">
+        <i class="fa-solid fa-bolt text-amber-400"></i> Quick Actions
+    </h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a href="/admin/projects.php?new=1" class="btn btn-ghost justify-center"><i class="fa-solid fa-plus"></i> Add Project</a>
+        <a href="/admin/gallery.php" class="btn btn-ghost justify-center"><i class="fa-solid fa-image"></i> Add Gallery Image</a>
+        <a href="/admin/sections.php" class="btn btn-ghost justify-center"><i class="fa-solid fa-toggle-on"></i> Sections & Menus</a>
+        <a href="/admin/settings.php" class="btn btn-ghost justify-center"><i class="fa-solid fa-sliders"></i> Site Settings</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+    .va-tab        { color: rgba(255,255,255,0.6); }
+    .va-tab:hover  { color: #fff; }
+    .va-tab.active { background: rgba(255,255,255,0.10); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10); }
+</style>
+<script>
+(function () {
+    const canvas = document.getElementById("visitorChart");
+    if (!canvas || typeof Chart === "undefined") return;
+
+    const ctx     = canvas.getContext("2d");
+    const tabs    = document.querySelectorAll(".va-tab");
+    const elTotal = document.getElementById("vaTotal");
+    const elPeak  = document.getElementById("vaPeak");
+    const elAvg   = document.getElementById("vaAvg");
+    const elEmpty = document.getElementById("vaEmpty");
+
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, "rgba(168, 85, 247, 0.55)");
+    grad.addColorStop(1, "rgba(99, 102, 241, 0.04)");
+
+    const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Unique visitors",
+                data: [],
+                borderColor: "#a855f7",
+                backgroundColor: grad,
+                pointBackgroundColor: "#ec4899",
+                pointBorderColor: "#fff",
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 2.5,
+                tension: 0.35,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: "rgba(15, 17, 32, 0.95)",
+                    titleColor: "#fff", bodyColor: "#e5e7eb",
+                    borderColor: "rgba(255,255,255,0.1)", borderWidth: 1,
+                    padding: 10, displayColors: false,
+                }
+            },
+            scales: {
+                x: {
+                    grid:   { color: "rgba(255,255,255,0.04)" },
+                    ticks:  { color: "rgba(255,255,255,0.55)", maxRotation: 0 }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid:   { color: "rgba(255,255,255,0.06)" },
+                    ticks:  { color: "rgba(255,255,255,0.55)", precision: 0 }
+                }
+            }
+        }
+    });
+
+    function setActive(range) {
+        tabs.forEach(t => t.classList.toggle("active", t.dataset.range === range));
+    }
+
+    async function load(range) {
+        try {
+            const res  = await fetch("/admin/api/visitors.php?range=" + encodeURIComponent(range), {
+                credentials: "same-origin",
+                headers: { "Accept": "application/json" }
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Bad response");
+
+            chart.data.labels       = data.labels;
+            chart.data.datasets[0].data = data.counts;
+            chart.update();
+
+            const counts = data.counts || [];
+            const total  = data.total ?? counts.reduce((a, b) => a + b, 0);
+            const peakI  = counts.length ? counts.indexOf(Math.max(...counts)) : -1;
+            const avg    = counts.length ? (total / counts.length) : 0;
+
+            elTotal.textContent = total.toLocaleString();
+            elPeak.textContent  = peakI >= 0
+                ? `${counts[peakI].toLocaleString()} on ${data.labels[peakI]}`
+                : "—";
+            elAvg.textContent   = avg.toFixed(avg >= 10 ? 0 : 1);
+
+            elEmpty.classList.toggle("hidden", total > 0);
+        } catch (err) {
+            elTotal.textContent = elPeak.textContent = elAvg.textContent = "—";
+            elEmpty.classList.remove("hidden");
+            elEmpty.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-3xl mb-2 text-rose-300"></i>Could not load analytics.';
+        }
+    }
+
+    tabs.forEach(t => t.addEventListener("click", () => {
+        setActive(t.dataset.range);
+        load(t.dataset.range);
+    }));
+
+    document.getElementById("vaResetBtn")?.addEventListener("click", async () => {
+        if (!confirm("Delete ALL visitor analytics data and start fresh?\n\nThis cannot be undone.")) return;
+        try {
+            const res = await fetch("/admin/api/visitors_reset.php", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Accept": "application/json" }
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Reset failed");
+            // Reload the page so the header cards (Unique Visitors, Visits Today) update too.
+            window.location.reload();
+        } catch (err) {
+            alert("Reset failed: " + err.message);
+        }
+    });
+
+    setActive("weekly");
+    load("weekly");
+})();
+</script>
+          </section>
+        </main>
+      </div>
+
+      <!-- Toast stack -->
+      <div id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+      <script>
+        // Tiny toast renderer. Theme-consistent with the glassmorphic UI.
+        (function () {
+          const ICONS = {
+            success: 'fa-circle-check',
+            error:   'fa-circle-exclamation',
+            info:    'fa-circle-info',
+          };
+          window.showToast = function (type, msg, timeout = 4000) {
+            const stack = document.getElementById('toast-stack');
+            if (!stack) return;
+            type = ICONS[type] ? type : 'info';
+            const el = document.createElement('div');
+            el.className = 'toast ' + type;
+            el.innerHTML = `
+              <div class="toast-icon"><i class="fa-solid ${ICONS[type]}"></i></div>
+              <div class="toast-body flex-1">${String(msg).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+              <button class="toast-close" aria-label="Dismiss">
+                <i class="fa-solid fa-xmark"></i>
+              </button>`;
+            el.querySelector('.toast-close').addEventListener('click', () => dismiss());
+            stack.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+            const t = setTimeout(dismiss, timeout);
+            function dismiss() {
+              clearTimeout(t);
+              el.classList.remove('show');
+              setTimeout(() => el.remove(), 350);
+            }
+          };
+
+          // Hydrate any server-queued toasts.
+          const queued = [];
+          queued.forEach((q, i) => setTimeout(() => showToast(q.type, q.msg), 80 + i * 120));
+        })();
+
+        // Confirm-on-click links (preserve original behaviour).
+        document.querySelectorAll('[data-confirm]').forEach(el => {
+          el.addEventListener('click', e => {
+            if (!confirm(el.dataset.confirm)) e.preventDefault();
+          });
+        });
+      </script>
+    </body>
+    </html>
+    

@@ -2,6 +2,21 @@
 /** @var array $site */
 $assets = $site["asset_base"];
 
+$hexToRgb = static function (string $hex): string {
+    $hex = trim($hex);
+    $hex = ltrim($hex, '#');
+    if (strlen($hex) === 3) {
+        $hex = preg_replace('/(.)/', '$1$1', $hex) ?? $hex;
+    }
+    if (strlen($hex) !== 6) {
+        return "139, 92, 246";
+    }
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+    return "$r, $g, $b";
+};
+
 // Header navigation comes from the menu_items table — admins can toggle each
 // item from /admin/sections.php (Header Menu tab).
 $nav = \App\MenuItem::visible("header");
@@ -18,6 +33,27 @@ if (!$nav) {
     ];
 }
 
+$themePrimary = trim((string) \App\Settings::get("theme_primary", "#8b5cf6"));
+$themeSecondary = trim((string) \App\Settings::get("theme_secondary", "#22d3ee"));
+$themeAccent = trim((string) \App\Settings::get("theme_accent", "#f472b6"));
+$themeBackground = trim((string) \App\Settings::get("theme_background", "#0a0b14"));
+$themeAnimation = trim((string) \App\Settings::get("theme_animation", "dynamic"));
+$theme3DEnabled = filter_var(\App\Settings::get("theme_3d_enabled", "1"), FILTER_VALIDATE_BOOLEAN) ? "on" : "off";
+$theme3DDepth = max(8, min(28, (int) \App\Settings::get("theme_3d_depth", "18")));
+$imageHoverEnabled = filter_var(\App\Settings::get("image_hover_enabled", "1"), FILTER_VALIDATE_BOOLEAN) ? "on" : "off";
+$imageHoverDuration = (float) \App\Settings::get("image_hover_duration", "0.9");
+$imageHoverEase = trim((string) \App\Settings::get("image_hover_easing", "cubic-bezier(0.22, 1, 0.36, 1)"));
+$imageHoverScale = (float) \App\Settings::get("image_hover_scale", "1.05");
+$imageHoverParallax = (int) \App\Settings::get("image_hover_parallax", "12");
+$imageHoverTilt = (int) \App\Settings::get("image_hover_tilt", "8");
+$imageHoverMouseStrength = (int) \App\Settings::get("image_hover_mouse_strength", "12");
+$imageHoverEdge = filter_var(\App\Settings::get("image_hover_edge", "1"), FILTER_VALIDATE_BOOLEAN) ? "on" : "off";
+$imageHoverEdgeBlur = (int) \App\Settings::get("image_hover_edge_blur", "12");
+$imageHoverEdgeGlow = (float) \App\Settings::get("image_hover_edge_glow", "0.7");
+$imageHoverReverse = filter_var(\App\Settings::get("image_hover_reverse", "1"), FILTER_VALIDATE_BOOLEAN) ? "on" : "off";
+$imageHoverDirection = trim((string) \App\Settings::get("image_hover_direction", "lr"));
+$imageHoverClipStyle = trim((string) \App\Settings::get("image_hover_clip_style", "inset"));
+$imageHoverMobile = trim((string) \App\Settings::get("image_hover_mobile_behavior", "tap"));
 $faviconHref = !empty($site["favicon"])
     ? "/uploads/images/" . htmlspecialchars($site["favicon"])
     : $assets . "/favicon.svg";
@@ -28,8 +64,8 @@ $faviconHref = !empty($site["favicon"])
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title><?= htmlspecialchars($site["name"]) ?> &mdash; Graphic Designer &amp; Video Editor</title>
-    <meta name="description" content="Portfolio of <?= htmlspecialchars($site["name"]) ?>, a Graphic Designer &amp; Video Editor based in <?= htmlspecialchars($site["location"]) ?>.">
+    <title><?= htmlspecialchars($site["name"]) ?> &mdash; Full-Stack Developer &amp; Product Engineer</title>
+    <meta name="description" content="Portfolio of <?= htmlspecialchars($site["name"]) ?>, a Full-Stack Developer &amp; Product Engineer based in <?= htmlspecialchars($site["location"]) ?>.">
     <meta name="author" content="<?= htmlspecialchars($site["name"]) ?>">
     <meta name="theme-color" content="#0a0b14">
 
@@ -46,8 +82,37 @@ $faviconHref = !empty($site["favicon"])
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="<?= $assets ?>/css/style.css">
+    <style>
+        :root {
+            --primary: <?= htmlspecialchars($themePrimary) ?>;
+            --primary-rgb: <?= htmlspecialchars($hexToRgb($themePrimary)) ?>;
+            --secondary: <?= htmlspecialchars($themeSecondary) ?>;
+            --secondary-rgb: <?= htmlspecialchars($hexToRgb($themeSecondary)) ?>;
+            --accent: <?= htmlspecialchars($themeAccent) ?>;
+            --accent-rgb: <?= htmlspecialchars($hexToRgb($themeAccent)) ?>;
+            --bg: <?= htmlspecialchars($themeBackground) ?>;
+            --bg-2: <?= htmlspecialchars($themeBackground) ?>;
+            --theme-tilt: <?= (int)$theme3DDepth ?>deg;
+            --motion-speed: 0.7s;
+            --orb-duration: 18s;
+            --image-hover-duration: <?= htmlspecialchars((string)$imageHoverDuration) ?>s;
+            --image-hover-ease: <?= htmlspecialchars($imageHoverEase) ?>;
+            --image-hover-scale: <?= htmlspecialchars((string)$imageHoverScale) ?>;
+            --image-hover-parallax: <?= (int)$imageHoverParallax ?>px;
+            --image-hover-tilt: <?= (int)$imageHoverTilt ?>deg;
+            --image-hover-mouse-strength: <?= (int)$imageHoverMouseStrength ?>px;
+            --image-hover-edge-blur: <?= (int)$imageHoverEdgeBlur ?>px;
+            --image-hover-edge-glow: <?= htmlspecialchars((string)$imageHoverEdgeGlow) ?>;
+            --image-hover-direction: <?= htmlspecialchars($imageHoverDirection) ?>;
+            --image-hover-mobile: <?= htmlspecialchars($imageHoverMobile) ?>;
+        }
+
+        body[data-theme-animation="subtle"] { --motion-speed: 0.9s; --orb-duration: 22s; }
+        body[data-theme-animation="dynamic"] { --motion-speed: 0.7s; --orb-duration: 16s; }
+        body[data-theme-animation="bold"] { --motion-speed: 0.45s; --orb-duration: 10s; }
+    </style>
 </head>
-<body>
+<body data-theme-animation="<?= htmlspecialchars($themeAnimation) ?>" data-3d-enabled="<?= htmlspecialchars($theme3DEnabled) ?>" data-image-hover-enabled="<?= htmlspecialchars($imageHoverEnabled) ?>" data-image-hover-direction="<?= htmlspecialchars($imageHoverDirection) ?>" data-image-hover-mobile="<?= htmlspecialchars($imageHoverMobile) ?>" data-image-hover-reverse="<?= htmlspecialchars($imageHoverReverse) ?>">
 
     <div class="background-orbs" aria-hidden="true">
         <div class="orb orb-violet"></div>

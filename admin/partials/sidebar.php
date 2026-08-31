@@ -22,6 +22,8 @@ $nav = [
     ["about",     "/admin/about.php",     "fa-user-pen",         "About / Bio"],
     ["projects",  "/admin/projects.php",  "fa-briefcase",        "Projects"],
     ["skills",    "/admin/skills.php",    "fa-layer-group",      "Skills"],
+    ["experience", "/admin/experience.php", "fa-briefcase",      "Experience"],
+    ["certifications", "/admin/certifications.php", "fa-certificate", "Certifications"],
     ["education", "/admin/education.php", "fa-graduation-cap",   "Education"],
     ["reviews",   "/admin/reviews.php",   "fa-star-half-stroke", "Reviews"],
     ["clients",   "/admin/brandlist.php",  "fa-handshake",        "Trusted Clients"],

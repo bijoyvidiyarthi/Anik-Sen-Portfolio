@@ -125,10 +125,36 @@ admin_layout_start("Hero Section", "hero");
                 <div><label class="label">Primary CTA link</label><input class="input" name="cta_link" value="<?= htmlspecialchars($hero["cta_link"] ?? "") ?>" placeholder="#projects"></div>
             </div>
             <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="label">Primary button style</label>
+                    <select class="input" name="cta_variant">
+                        <option value="primary" <?= (($hero["cta_variant"] ?? "primary") === "primary") ? "selected" : "" ?>>Primary</option>
+                        <option value="outline" <?= (($hero["cta_variant"] ?? "primary") === "outline") ? "selected" : "" ?>>Outline</option>
+                        <option value="ghost" <?= (($hero["cta_variant"] ?? "primary") === "ghost") ? "selected" : "" ?>>Ghost</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Secondary button style</label>
+                    <select class="input" name="cta2_variant">
+                        <option value="outline" <?= (($hero["cta2_variant"] ?? "outline") === "outline") ? "selected" : "" ?>>Outline</option>
+                        <option value="primary" <?= (($hero["cta2_variant"] ?? "outline") === "primary") ? "selected" : "" ?>>Primary</option>
+                        <option value="ghost" <?= (($hero["cta2_variant"] ?? "outline") === "ghost") ? "selected" : "" ?>>Ghost</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
                 <div><label class="label">Secondary CTA label</label><input class="input" name="cta2_label" value="<?= htmlspecialchars($hero["cta2_label"] ?? "") ?>" placeholder="Download CV"></div>
                 <div><label class="label">Secondary CTA link</label><input class="input" name="cta2_link" value="<?= htmlspecialchars($hero["cta2_link"] ?? "") ?>" placeholder="/cv.php"></div>
             </div>
-            <div class="text-[11px] text-white/40">Tip: leave a label blank to hide the corresponding button. <code>/cv.php</code> automatically becomes a download link.</div>
+            <div>
+                <label class="label">Secondary action</label>
+                <select class="input" name="cta2_type">
+                    <option value="link" <?= (($hero["cta2_type"] ?? "download") === "link") ? "selected" : "" ?>>Open link</option>
+                    <option value="download" <?= (($hero["cta2_type"] ?? "download") === "download") ? "selected" : "" ?>>Download file</option>
+                    <option value="external" <?= (($hero["cta2_type"] ?? "download") === "external") ? "selected" : "" ?>>Open in new tab</option>
+                </select>
+            </div>
+            <div class="text-[11px] text-white/40">Tip: leave a label blank to hide the corresponding button. Set the secondary action to Download to make the CV button behave like a file download.</div>
         </div>
 
         <!-- ============== Stats strip ============== -->

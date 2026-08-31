@@ -11,7 +11,10 @@
         initMobileNav();
         initTypingAccent();
         initScrollReveals();
+        initTheme3D();
+        initImageHoverSwap();
         initScrollSpy();
+        initCertificateLightbox();
         initProjectFilter();
         initReviewsCarousel();
         initContactForm();
@@ -177,6 +180,141 @@
             });
         }, { threshold: 0.12, rootMargin: "0px 0px -60px 0px" });
         items.forEach(el => io.observe(el));
+    }
+
+    /* ---------- Premium image hover swap ---------- */
+    function initImageHoverSwap() {
+        const enabled = document.body.dataset.imageHoverEnabled !== "off";
+        const mobileMode = document.body.dataset.imageHoverMobile || "tap";
+        const items = document.querySelectorAll(".image-hover-swap");
+        if (!items.length || !enabled) return;
+
+        const supportsHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+        items.forEach((item) => {
+            const direction = item.dataset.direction || "lr";
+            const edgeSetting = item.dataset.edge || "on";
+            const base = item.querySelector(".image-hover-base");
+            const overlay = item.querySelector(".image-hover-overlay");
+            const edge = item.querySelector(".image-hover-edge");
+            if (!base || !overlay) return;
+
+            item.dataset.direction = direction;
+            item.dataset.edge = edgeSetting;
+            item.dataset.mobile = mobileMode;
+
+            if (!supportsHover) {
+                if (mobileMode === "disabled") return;
+                item.addEventListener("click", () => {
+                    item.classList.toggle("is-mobile-active");
+                });
+                return;
+            }
+
+            const updatePointer = (event) => {
+                const rect = item.getBoundingClientRect();
+                const cx = ((event.clientX - rect.left) / rect.width) * 100;
+                const cy = ((event.clientY - rect.top) / rect.height) * 100;
+                item.style.setProperty("--pointer-x", cx + "%");
+                item.style.setProperty("--pointer-y", cy + "%");
+
+                const strength = Number(getComputedStyle(document.documentElement).getPropertyValue("--image-hover-mouse-strength").trim().replace(/px|deg/g, "")) || 12;
+                const x = ((event.clientX - rect.left) / rect.width - 0.5) * strength;
+                const y = ((event.clientY - rect.top) / rect.height - 0.5) * strength;
+                const tilt = Number(getComputedStyle(document.documentElement).getPropertyValue("--image-hover-tilt").trim().replace(/deg/g, "")) || 8;
+                item.style.transform = `perspective(1200px) rotateX(${(-y / 2).toFixed(2)}deg) rotateY(${(x / 2).toFixed(2)}deg) translate3d(0, 0, 0)`;
+                item.style.boxShadow = `0 ${Math.abs(y) * 0.5}px ${Math.abs(x) * 0.8 + 20}px rgba(0,0,0,0.18)`;
+                if (edge) edge.style.transform = `translate(${(x * 0.2).toFixed(2)}px, ${(y * 0.2).toFixed(2)}px)`;
+                base.style.transform = `scale(1.02) translate(${(x * 0.12).toFixed(2)}px, ${(y * 0.12).toFixed(2)}px)`;
+                overlay.style.transform = `scale(1.06) translate(${(x * 0.18).toFixed(2)}px, ${(y * 0.18).toFixed(2)}px)`;
+                item.style.setProperty("--rx", ((-y / 4) * (tilt / 8)).toFixed(2) + "deg");
+                item.style.setProperty("--ry", ((x / 4) * (tilt / 8)).toFixed(2) + "deg");
+            };
+
+            item.addEventListener("pointerenter", () => {
+                item.classList.add("is-hovered");
+            });
+            item.addEventListener("pointerleave", () => {
+                item.classList.remove("is-hovered");
+                item.style.transform = "";
+                item.style.boxShadow = "";
+                if (edge) edge.style.transform = "";
+                base.style.transform = "scale(1.02)";
+                overlay.style.transform = "scale(1.05)";
+            });
+            item.addEventListener("pointermove", updatePointer);
+        });
+    }
+
+    /* ---------- Optional 3D tilt effect controlled by admin theme settings ---------- */
+    function initTheme3D() {
+        if (document.body.dataset.threeDEnabled !== "on") return;
+        const selectors = [
+            ".glass-card",
+            ".project-card",
+            ".experience-item",
+            ".education-item",
+            ".cert-card",
+            ".skill-card",
+            ".review-card",
+            ".timeline-item"
+        ];
+        const cards = document.querySelectorAll(selectors.join(", "));
+        if (!cards.length) return;
+
+        cards.forEach((card) => {
+            const move = (event) => {
+                const rect = card.getBoundingClientRect();
+                const px = (event.clientX - rect.left) / rect.width;
+                const py = (event.clientY - rect.top) / rect.height;
+                const tiltX = (0.5 - py) * 12;
+                const tiltY = (px - 0.5) * 12;
+                card.style.setProperty("--rx", tiltX.toFixed(2) + "deg");
+                card.style.setProperty("--ry", tiltY.toFixed(2) + "deg");
+            };
+
+            card.addEventListener("pointermove", move);
+            card.addEventListener("pointerleave", () => {
+                card.style.removeProperty("--rx");
+                card.style.removeProperty("--ry");
+            });
+        });
+    }
+
+    /* ---------- Certificate lightbox ---------- */
+    function initCertificateLightbox() {
+        const lightbox = document.getElementById('certificateLightbox');
+        const image = document.getElementById('certificateLightboxImage');
+        const closeBtn = lightbox ? lightbox.querySelector('.lightbox-close') : null;
+        if (!lightbox || !image) return;
+
+        const close = () => {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            image.src = '';
+        };
+
+        document.querySelectorAll('.cert-preview').forEach((button) => {
+            button.addEventListener('click', () => {
+                const url = button.dataset.certImage || '';
+                const title = button.dataset.certTitle || 'Certificate preview';
+                if (!url) return;
+                image.src = url;
+                image.alt = title;
+                lightbox.classList.add('is-open');
+                lightbox.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+            });
+        });
+
+        closeBtn && closeBtn.addEventListener('click', close);
+        lightbox.addEventListener('click', (event) => {
+            if (event.target === lightbox) close();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-open')) close();
+        });
     }
 
     /* ---------- Projects: two-tier filter + pagination + media modals ---------- */

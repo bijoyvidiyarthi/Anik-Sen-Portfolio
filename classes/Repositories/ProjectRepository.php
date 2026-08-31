@@ -18,34 +18,34 @@ class ProjectRepository extends BaseRepository implements PublishableInterface
     protected static string $table = 'projects';
 
     public const MAIN_CATEGORIES = [
-        'video'   => 'Video Editing & Motion Graphics',
-        'graphic' => 'Graphic Design',
+        'video'   => 'Web Applications',
+        'graphic' => 'Platform Systems',
     ];
 
     public const SUB_CATEGORIES = [
         'video' => [
-            'Product Ads',
-            'Educational',
-            'Business Promotion',
-            'Wedding/Pre-wedding',
-            'Documentary',
-            'Explainer Videos',
-            'Podcast',
-            'Marketing Videos',
+            'SaaS Dashboard',
+            'E-commerce Experience',
+            'Marketplace App',
+            'B2B Portal',
+            'Productivity Tool',
+            'Customer Experience',
+            'Developer Platform',
+            'Marketing Site',
         ],
         'graphic' => [
-            'Photo-cards (FB/Web)',
-            'Logos',
-            'Banners',
-            'Posters',
-            'Thumbnails',
+            'Backend APIs',
+            'Automation',
+            'Internal Tools',
+            'Data & Analytics',
+            'DevOps Workflows',
         ],
     ];
 
     public const MEDIA_KINDS = [
-        'video'   => 'Video player (modal)',
-        'gallery' => 'Image gallery (lightbox)',
-        'link'    => 'External link only',
+        'video'   => 'Product demo (modal)',
+        'gallery' => 'Screenshot gallery (lightbox)',
+        'link'    => 'Project link only',
     ];
 
     // ── RepositoryInterface ──────────────────────────────────────────────────
@@ -160,7 +160,7 @@ class ProjectRepository extends BaseRepository implements PublishableInterface
             $sw = implode(',', array_filter(array_map('trim', $sw)));
         }
 
-        $legacy = $main === 'video' ? 'Video Editing' : 'Graphic Design';
+        $legacy = $main === 'video' ? 'Web Product' : 'Platform Engineering';
 
         // Resolve normalised embed URL (converts youtu.be/ID → youtube.com/embed/ID).
         $rawVideoUrl = trim((string)($d['video_url'] ?? ''));
